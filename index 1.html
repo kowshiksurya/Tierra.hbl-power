@@ -8,14 +8,14 @@
     /* General styling */
     body {
       font-family: Arial, sans-serif;
-      background-color: #fff;
+      background-color: #fff; /* White background */
       margin: 0;
       padding: 0;
     }
 
     /* Header styling */
     header {
-      background-color: #003366;
+      background-color: #003366; /* Dark blue color */
       color: white;
       padding: 20px;
       text-align: center;
@@ -26,7 +26,7 @@
     }
 
     header img {
-      max-width: 100px;
+      max-width: 100px; /* Adjust the logo size */
       margin-bottom: 10px;
     }
 
@@ -57,7 +57,7 @@
     }
 
     table th {
-      background-color: #003366;
+      background-color: #003366; /* Dark blue for header */
       color: white;
     }
 
@@ -69,38 +69,30 @@
       background-color: #f1f1f1;
     }
 
-    /* Highlighting cells with value below 1.5 */
-    .highlight {
-      background-color: rgb(235, 171, 171);
-      font-weight: bold;
-    }
-
-    /* Download button styling */
-    #downloadButton {
-      display: block;
-      margin: 10px auto;
-      padding: 10px 20px;
-      background-color: #007bff;
+    /* Footer styling */
+    footer {
+      text-align: center;
+      padding: 10px;
+      background-color: #003366;
       color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    #downloadButton:hover {
-      background-color: #0056b3;
+      position: fixed;
+      width: 100%;
+      bottom: 0;
     }
   </style>
 </head>
 <body>
+
+  <!-- Header with company name and logo -->
   <header>
-    <img src="logo.png.png" alt="Tierra Automation Logo">
+    <img src="logo.png.png">
     <h1>Tierra Automation</h1>
   </header>
 
+  <!-- Search bar -->
   <input type="text" id="searchBar" placeholder="Search here..." />
 
+  <!-- Results table -->
   <table id="resultsTable">
     <thead>
       <tr>
@@ -109,10 +101,10 @@
         <th>Date</th>
         <th>Clock Time</th>
         <th>Plate Type</th>
-        <th>Terminal Design</th>
+        <th>Terminal design</th>
         <th>Model No</th>
         <th>Batch No</th>
-        <th>Soaking Period</th>
+        <th>Soaking period</th>
         <th>Tub No</th>
         <th>Circhit No</th>
         <th>Room No</th>
@@ -178,13 +170,13 @@
         <th>MAX (V)</th>
         <th>Ambient temperature</th>
         <th>Tub water temperature</th>
-        <th>Cell Temperature</th>
+        <th>Cell temperature</th>
       </tr>
     </thead>
-    <tbody id="searchResults"></tbody>
+    <tbody id="searchResults">
+      <!-- Search results will be inserted here -->
+    </tbody>
   </table>
-
-  <button id="downloadButton" onclick="downloadFilteredData()">Download Excel</button>
 
   <footer>
     <p>&copy; 2024 Tierra Automation</p>
@@ -193,20 +185,13 @@
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycby3zyLUtmSJc8_4Wa-3MDdUVsgmMqi6-OfWti4wv8aPBqd8EaJtZOdE4F3UqLAJ8r5WDg/exec';
 
-    // Fetch data initially and set an interval for auto-refresh
-    function fetchData() {
-      fetch(API_URL)
-        .then(response => response.json())
-        .then(data => {
-          const sheetData = data.data;
-          initializeSearch(sheetData);
-        })
-        .catch(error => console.error('Error fetching data:', error));
-    }
-
-    // Fetch data every 5 minutes (300000 ms)
-    setInterval(fetchData, 300000);
-    fetchData();  // Initial fetch
+    fetch(API_URL)
+      .then(response => response.json())
+      .then(data => {
+        const sheetData = data.data;
+        initializeSearch(sheetData);
+      })
+      .catch(error => console.error('Error fetching data:', error));
 
     function initializeSearch(data) {
       const searchBar = document.getElementById('searchBar');
@@ -227,57 +212,37 @@
     function displayResults(results, container) {
       container.innerHTML = results
         .map(row => {
-          return `<tr>${row.map((cell, index) => {
-            return `<td class="${highlightCell(cell, index)}">${formatCell(cell)}</td>`;
-          }).join('')}</tr>`;
+          return `<tr>${row.map(cell => `<td>${formatCell(cell)}</td>`).join('')}</tr>`;
         })
         .join('');
     }
 
     function formatCell(cell) {
-      if (!cell) return '';
+      if (!cell) return ''; // Handle empty cells
       const cellString = cell.toString();
 
+      // Check if it's a time or date format
       if (cellString.includes('T')) {
         const date = new Date(Date.parse(cellString));
         if (!isNaN(date)) {
+          // Check if it matches the "1899-12-29" pattern (Excel base date issue)
           if (cellString.startsWith('1899-12-30') || cellString.startsWith('1899-12-29')) {
-            return date.toLocaleTimeString('en-US', { hour12: true });
+            return date.toLocaleTimeString('en-US', { hour12: true }); // Format as time
           }
           return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-          });
+          }); // Format as date
         }
       }
-      return cell;
+      return sanitizeCell(cell); // Return original cell if not a time or date format
     }
 
-    function highlightCell(cell, index) {
-      // Highlight columns 17 (1) to 52 (Cell Temperature)
-      if (index >= 17 && index <= 52 && typeof cell === 'number' && cell < 1.5) {
-        return 'highlight';
-      }
-      return '';
-    }
-
-    function downloadFilteredData() {
-      const table = document.getElementById('resultsTable');
-      const rows = Array.from(table.querySelectorAll('tr'));
-      const csvContent = rows.map(row => {
-        const cells = Array.from(row.querySelectorAll('th, td'));
-        return cells.map(cell => `"${cell.textContent}"`).join(',');
-      }).join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'FilteredData.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    function sanitizeCell(cell) {
+      return cell ? cell : ''; // Ensure no undefined or null values break the table
     }
   </script>
+
 </body>
 </html>
