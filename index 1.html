@@ -191,26 +191,22 @@
   </footer>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwc_KKOWakpLzwxOo2GwQyZ1x9lou6bNNxi9sQv-bA274_JUg6h1BQJMybEtZlGZ3DvDg/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycby3zyLUtmSJc8_4Wa-3MDdUVsgmMqi6-OfWti4wv8aPBqd8EaJtZOdE4F3UqLAJ8r5WDg/exec';
 
     // Fetch data initially and set an interval for auto-refresh
-    async function fetchData() {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
-        initializeSearch(data.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        alert('Failed to fetch data. Please check your internet connection or API URL.');
-      }
+    function fetchData() {
+      fetch(API_URL)
+        .then(response => response.json())
+        .then(data => {
+          const sheetData = data.data;
+          initializeSearch(sheetData);
+        })
+        .catch(error => console.error('Error fetching data:', error));
     }
 
-    // Call fetchData on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchData();
-      setInterval(fetchData, 300000); // Refresh every 5 minutes
-    });
+    // Fetch data every 5 minutes (300000 ms)
+    setInterval(fetchData, 300000);
+    fetchData();  // Initial fetch
 
     function initializeSearch(data) {
       const searchBar = document.getElementById('searchBar');
@@ -232,13 +228,13 @@
       container.innerHTML = results
         .map(row => {
           return `<tr>${row.map((cell, index) => {
-            return `<td class="${highlightCell(cell, index)}">${formatCell(cell, index)}</td>`;
+            return `<td class="${highlightCell(cell, index)}">${formatCell(cell)}</td>`;
           }).join('')}</tr>`;
         })
         .join('');
     }
 
-    function formatCell(cell, index) {
+    function formatCell(cell) {
       if (!cell) return '';
       const cellString = cell.toString();
 
@@ -246,7 +242,7 @@
         const date = new Date(Date.parse(cellString));
         if (!isNaN(date)) {
           if (cellString.startsWith('1899-12-30') || cellString.startsWith('1899-12-29')) {
-            return date.toLocaleTimeString('en-US', { hour12: false });
+            return date.toLocaleTimeString('en-US', { hour12: true });
           }
           return date.toLocaleDateString('en-US', {
             year: 'numeric',
