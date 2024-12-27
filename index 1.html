@@ -8,17 +8,18 @@
     /* General styling */
     body {
       font-family: Arial, sans-serif;
-      background-color: #fff; /* White background */
+      background-color: #fff;
       margin: 0;
       padding: 0;
     }
 
     /* Header styling */
     header {
-      background-color: #003366; /* Dark blue color */
+      background-color: #003366;
       color: white;
       padding: 20px;
       text-align: center;
+      position: relative;
     }
 
     header h1 {
@@ -26,8 +27,45 @@
     }
 
     header img {
-      max-width: 100px; /* Adjust the logo size */
+      max-width: 100px;
       margin-bottom: 10px;
+    }
+
+    /* Hamburger menu */
+    #menuToggle {
+      display: block;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      cursor: pointer;
+    }
+
+    #menuToggle div {
+      width: 30px;
+      height: 3px;
+      background-color: white;
+      margin: 5px 0;
+    }
+
+    #menu {
+      display: none;
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      background-color: #003366;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    #menu a {
+      color: white;
+      text-decoration: none;
+      padding: 10px;
+      display: block;
+    }
+
+    #menu a:hover {
+      background-color: #0056b3;
     }
 
     /* Search bar styling */
@@ -57,7 +95,7 @@
     }
 
     table th {
-      background-color: #003366; /* Dark blue for header */
+      background-color: #003366;
       color: white;
     }
 
@@ -69,31 +107,87 @@
       background-color: #f1f1f1;
     }
 
-    /* Footer styling */
-    footer {
-      text-align: center;
-      padding: 10px;
-      background-color: #003366;
+    /* Highlighting cells with value below 1.5 */
+    .highlight {
+      background-color: rgb(235, 171, 171);
+      font-weight: bold;
+    }
+
+    /* Download button styling */
+    #downloadButton {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      background-color: #007bff;
       color: white;
-      position: fixed;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #downloadButton:hover {
+      background-color: #0056b3;
+    }
+
+    /* Device URL input styling */
+    #deviceUrlInput {
+      display: none;
       width: 100%;
-      bottom: 0;
+      max-width: 600px;
+      padding: 10px;
+      font-size: 16px;
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    /* Back Button */
+    #backButton {
+      background-color: #ff6347;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: none;
+      margin: 20px;
+    }
+
+    #backButton:hover {
+      background-color: #ff4500;
     }
   </style>
 </head>
 <body>
-
-  <!-- Header with company name and logo -->
   <header>
-    <img src="logo.png.png">
+    <img src="logo.png.png" alt="Tierra Automation Logo">
     <h1>Tierra Automation</h1>
+
+    <!-- Hamburger Menu -->
+    <div id="menuToggle" onclick="toggleMenu()">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+
+    <!-- Menu -->
+    <div id="menu">
+      <a href="#" onclick="switchDevice('device1')">Device 1</a>
+      <a href="#" onclick="switchDevice('device2')">Device 2</a>
+      <a href="#" onclick="goBack()">Back</a>
+    </div>
   </header>
 
-  <!-- Search bar -->
-  <input type="text" id="searchBar" placeholder="Search here..." />
+  <!-- Back Button -->
+  <button id="backButton" onclick="goBack()">Back to Initial Page</button>
 
-  <!-- Results table -->
-  <table id="resultsTable">
+  <!-- Device URL Input (only shown for Device 2) -->
+  <input type="text" id="deviceUrlInput" placeholder="Paste Google Sheets URL here..." />
+
+  <input type="text" id="searchBar" placeholder="Search here..." style="display:none;" />
+
+  <table id="resultsTable" style="display:none;">
     <thead>
       <tr>
         <th></th>
@@ -101,10 +195,10 @@
         <th>Date</th>
         <th>Clock Time</th>
         <th>Plate Type</th>
-        <th>Terminal design</th>
+        <th>Terminal Design</th>
         <th>Model No</th>
         <th>Batch No</th>
-        <th>Soaking period</th>
+        <th>Soaking Period</th>
         <th>Tub No</th>
         <th>Circhit No</th>
         <th>Room No</th>
@@ -170,28 +264,36 @@
         <th>MAX (V)</th>
         <th>Ambient temperature</th>
         <th>Tub water temperature</th>
-        <th>Cell temperature</th>
+        <th>Cell Temperature</th>
       </tr>
     </thead>
-    <tbody id="searchResults">
-      <!-- Search results will be inserted here -->
-    </tbody>
+    <tbody id="searchResults"></tbody>
   </table>
+
+  <button id="downloadButton" onclick="downloadFilteredData()" style="display:none;">Download Excel</button>
 
   <footer>
     <p>&copy; 2024 Tierra Automation</p>
   </footer>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycby3zyLUtmSJc8_4Wa-3MDdUVsgmMqi6-OfWti4wv8aPBqd8EaJtZOdE4F3UqLAJ8r5WDg/exec';
+    let currentDevice = 'device1';
+    let API_URL = 'https://script.google.com/macros/s/AKfycby3zyLUtmSJc8_4Wa-3MDdUVsgmMqi6-OfWti4wv8aPBqd8EaJtZOdE4F3UqLAJ8r5WDg/exec';
 
-    fetch(API_URL)
-      .then(response => response.json())
-      .then(data => {
-        const sheetData = data.data;
-        initializeSearch(sheetData);
-      })
-      .catch(error => console.error('Error fetching data:', error));
+    // Fetch data initially and set an interval for auto-refresh
+    function fetchData() {
+      fetch(API_URL)
+        .then(response => response.json())
+        .then(data => {
+          const sheetData = data.data;
+          initializeSearch(sheetData);
+        })
+        .catch(error => console.error('Error fetching data:', error));
+    }
+
+    // Fetch data every 5 minutes (300000 ms)
+    setInterval(fetchData, 300000);
+    fetchData();  // Initial fetch
 
     function initializeSearch(data) {
       const searchBar = document.getElementById('searchBar');
@@ -212,37 +314,87 @@
     function displayResults(results, container) {
       container.innerHTML = results
         .map(row => {
-          return `<tr>${row.map(cell => `<td>${formatCell(cell)}</td>`).join('')}</tr>`;
+          return `<tr>${row.map((cell, index) => {
+            return `<td class="${highlightCell(cell, index)}">${formatCell(cell, index)}</td>`;
+          }).join('')}</tr>`;
         })
         .join('');
     }
 
-    function formatCell(cell) {
-      if (!cell) return ''; // Handle empty cells
+    function formatCell(cell, index) {
+      if (!cell) return '';
       const cellString = cell.toString();
 
-      // Check if it's a time or date format
       if (cellString.includes('T')) {
         const date = new Date(Date.parse(cellString));
         if (!isNaN(date)) {
-          // Check if it matches the "1899-12-29" pattern (Excel base date issue)
           if (cellString.startsWith('1899-12-30') || cellString.startsWith('1899-12-29')) {
-            return date.toLocaleTimeString('en-US', { hour12: true }); // Format as time
+            return date.toLocaleTimeString('en-US', { hour12: false });
           }
           return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-          }); // Format as date
+          });
         }
       }
-      return sanitizeCell(cell); // Return original cell if not a time or date format
+      return cell;
     }
 
-    function sanitizeCell(cell) {
-      return cell ? cell : ''; // Ensure no undefined or null values break the table
+    function highlightCell(cell, index) {
+      // Highlight columns 17 (1) to 52 (Cell Temperature)
+      if (index >= 17 && index <= 52 && typeof cell === 'number' && cell < 1.5) {
+        return 'highlight';
+      }
+      return '';
+    }
+
+    function downloadFilteredData() {
+      const table = document.getElementById('resultsTable');
+      const rows = Array.from(table.querySelectorAll('tr'));
+      const csvContent = rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        return cells.map(cell => `"${cell.textContent}"`).join(',');
+      }).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'FilteredData.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function toggleMenu() {
+      const menu = document.getElementById('menu');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function switchDevice(device) {
+      currentDevice = device;
+      document.getElementById('deviceUrlInput').style.display = device === 'device2' ? 'block' : 'none';
+      document.getElementById('backButton').style.display = 'block';
+
+      if (device === 'device2') {
+        document.getElementById('resultsTable').style.display = 'none';
+        document.getElementById('searchBar').style.display = 'none';
+        document.getElementById('downloadButton').style.display = 'none';
+      } else {
+        document.getElementById('resultsTable').style.display = 'block';
+        document.getElementById('searchBar').style.display = 'block';
+        document.getElementById('downloadButton').style.display = 'block';
+        fetchData();
+      }
+    }
+
+    function goBack() {
+      document.getElementById('deviceUrlInput').style.display = 'none';
+      document.getElementById('resultsTable').style.display = 'none';
+      document.getElementById('searchBar').style.display = 'none';
+      document.getElementById('downloadButton').style.display = 'none';
+      document.getElementById('backButton').style.display = 'none';
     }
   </script>
-
 </body>
 </html>
